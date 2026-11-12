@@ -1,0 +1,85 @@
+name: ids706-healthcare
+
+x-airflow: &airflow
+  build: .
+  image: ids706-healthcare-airflow:3.1.0
+  environment: &airflow-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+    AIRFLOW__CORE__PARALLELISM: "4"
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-api-server:8080/execution/
+    AIRFLOW__API_AUTH__JWT_SECRET: local-mini-assignment-jwt-secret
+    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: student:admin
+    HEALTHCARE_DATABASE_URL: postgresql://healthcare:healthcare@healthcare-db/healthcare
+    HEALTHCARE_SCHEDULE: ${HEALTHCARE_SCHEDULE:-0 0 * * *}
+    MPLCONFIGDIR: /tmp/matplotlib
+  volumes:
+    - ./dags:/opt/airflow/dags:ro
+    - ./dataset:/opt/airflow/dataset:ro
+    - ./output:/opt/airflow/output
+    - ./logs:/opt/airflow/logs
+  depends_on:
+    postgres:
+      condition: service_healthy
+    healthcare-db:
+      condition: service_healthy
+    airflow-init:
+      condition: service_completed_successfully
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:16.6
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow-db:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U airflow]
+      interval: 5s
+      retries: 20
+    restart: unless-stopped
+
+  healthcare-db:
+    image: postgres:16.6
+    environment:
+      POSTGRES_USER: healthcare
+      POSTGRES_PASSWORD: healthcare
+      POSTGRES_DB: healthcare
+    volumes:
+      - healthcare-db:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U healthcare]
+      interval: 5s
+      retries: 20
+    restart: unless-stopped
+
+  airflow-init:
+    <<: *airflow
+    command: db migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  airflow-api-server:
+    <<: *airflow
+    command: api-server
+    ports:
+      - "127.0.0.1:8080:8080"
+
+  airflow-scheduler:
+    <<: *airflow
+    command: scheduler
+
+  airflow-dag-processor:
+    <<: *airflow
+    command: dag-processor
+
+volumes:
+  airflow-db:
+  healthcare-db:
