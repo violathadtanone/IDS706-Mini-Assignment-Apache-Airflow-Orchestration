@@ -1,3 +1,6 @@
+ref/
+dataset/Healthcare_Associated_Infections-Hospital.csv
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -218,3 +221,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Airflow runtime artifacts
+/output/
+/logs/
+.DS_Store
