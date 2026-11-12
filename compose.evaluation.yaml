@@ -1,0 +1,29 @@
+# One-shot commands: these intentionally execute and exit; they serve no ports.
+services:
+  adaptive-run:
+    image: ids706-healthcare-healthcare-ml:latest
+    working_dir: /workspace
+    entrypoint: [/home/airflow/ml-env/bin/python]
+    command: [-m, adaptive_workflow.graph, --output-dir, output/part3/adaptive/runtime-audit]
+    environment:
+      HEALTHCARE_DATABASE_URL: postgresql://healthcare:healthcare@healthcare-db/healthcare
+    volumes:
+      - ./adaptive_workflow:/workspace/adaptive_workflow:ro
+      - ./output:/workspace/output
+    depends_on:
+      healthcare-db:
+        condition: service_healthy
+  evaluation:
+    image: ids706-healthcare-healthcare-ml:latest
+    working_dir: /workspace
+    entrypoint: [/home/airflow/ml-env/bin/python]
+    command: [-m, evaluation.run]
+    environment:
+      HEALTHCARE_DATABASE_URL: postgresql://healthcare:healthcare@healthcare-db/healthcare
+    volumes:
+      - ./adaptive_workflow:/workspace/adaptive_workflow:ro
+      - ./evaluation:/workspace/evaluation:ro
+      - ./output:/workspace/output
+    depends_on:
+      healthcare-db:
+        condition: service_healthy

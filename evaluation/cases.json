@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "systems": {
+    "fixed_airflow": "Healthcare adaptation of the classroom fixed Airflow architecture; authoritative task bodies, one ordinary load-task retry. Scheduler execution is audited separately.",
+    "simple_agentic": "Completed Part 2: healthcare adaptation of the classroom simple agentic architecture, unchanged.",
+    "adaptive_multi_agent": "Part 3: custom specialist selection, validation routing and bounded database recovery."
+  },
+  "methodology": {
+    "data": "Read PostgreSQL once, freeze the raw HAI_1_SIR records, and prepare identical seed-42 splits for every system within each case.",
+    "faults": "Injected at the shared loader boundary; no production table is modified.",
+    "timing": "In-process workflow wall time including artifacts, excluding container startup and Airflow scheduler overhead. Fixed ordinary retry delay is five seconds.",
+    "budgets": {
+      "fixed_airflow": {
+        "fits": 1,
+        "retries": 1
+      },
+      "simple_agentic": {
+        "fits": 3,
+        "retries": 0
+      },
+      "adaptive_multi_agent": {
+        "fits": 3,
+        "retries": 2
+      }
+    },
+    "suite_success": "All adaptive cases pass; all observations satisfy instrumentation, split, budget and artifact controls. Baseline capability gaps are findings, not hidden or redefined as successes."
+  },
+  "cases": [
+    {
+      "name": "normal_snapshot",
+      "input": {
+        "fixture": "postgresql_frozen"
+      },
+      "expected_outcome": "Complete with disjoint splits, finite MAE and saved metrics/predictions.",
+      "scoring_criterion": "All completion, split, finite-metric, artifact and cohort-agreement checks true.",
+      "pass_fail_threshold": {
+        "checks_fraction": 1.0
+      }
+    },
+    {
+      "name": "constant_target",
+      "input": {
+        "fixture": "synthetic",
+        "seed": 21,
+        "rows": 200,
+        "target": "constant_1"
+      },
+      "expected_outcome": "Select the median predictor without claiming improvement over its zero validation error.",
+      "scoring_criterion": "Median selected; validation MAE equals baseline; no claimed positive improvement.",
+      "pass_fail_threshold": {
+        "checks_fraction": 1.0,
+        "absolute_tolerance": 1e-12
+      },
+      "not_applicable": {
+        "fixed_airflow": "Intentionally always evaluates Ridge; adaptive predictor selection is unsupported. Its zero-error metrics are still recorded."
+      }
+    },
+    {
+      "name": "ridge_improves",
+      "input": {
+        "fixture": "synthetic",
+        "seed": 21,
+        "rows": 200,
+        "target": "rating_times_0.2"
+      },
+      "expected_outcome": "Ridge is selected and genuinely improves validation MAE over the median baseline.",
+      "scoring_criterion": "Selected Ridge and at least 5% lower validation MAE; adaptive decisions use validation only.",
+      "pass_fail_threshold": {
+        "checks_fraction": 1.0,
+        "minimum_relative_improvement": 0.05
+      }
+    },
+    {
+      "name": "one_transient_read_failure",
+      "input": {
+        "fixture": "postgresql_frozen",
+        "failed_reads": 1
+      },
+      "expected_outcome": "Recover and complete within the declared retry budget; Part 3 must visit Recovery Coordinator.",
+      "scoring_criterion": "Completion, exactly two read attempts and one retry; Part 3 recovery node is present.",
+      "pass_fail_threshold": {
+        "checks_fraction": 1.0
+      },
+      "capability_note": "Fixed Airflow may recover through its ordinary retry. Part 2 has no retry; its failure is retained as a failed capability comparison."
+    },
+    {
+      "name": "persistent_read_failure",
+      "input": {
+        "fixture": "postgresql_frozen",
+        "failed_reads": 100
+      },
+      "expected_outcome": "Terminate with a database failure and no model fitting within each system's read-call limit.",
+      "scoring_criterion": "Database failure, zero fits, read calls equal retry allowance plus one, and no test evaluation.",
+      "pass_fail_threshold": {
+        "checks_fraction": 1.0
+      }
+    },
+    {
+      "name": "missing_required_column",
+      "input": {
+        "fixture": "postgresql_frozen",
+        "drop_column": "score"
+      },
+      "expected_outcome": "Reject missing score before fitting with a clear schema error.",
+      "scoring_criterion": "Schema error, zero fits, no test evaluation; Part 3 does not enter recovery.",
+      "pass_fail_threshold": {
+        "checks_fraction": 1.0
+      }
+    },
+    {
+      "name": "conflicting_facility",
+      "input": {
+        "fixture": "postgresql_frozen",
+        "duplicate": "eligible_facility_with_changed_score"
+      },
+      "expected_outcome": "Reject conflicting facility records before fitting; no silent deduplication.",
+      "scoring_criterion": "Data-integrity error, zero fits, no test evaluation or adaptive recovery.",
+      "pass_fail_threshold": {
+        "checks_fraction": 1.0
+      }
+    },
+    {
+      "name": "test_target_isolation",
+      "input": {
+        "fixture": "postgresql_frozen",
+        "paired_variant": "replace_only_test_scores_with_1000000"
+      },
+      "expected_outcome": "Identical routing, alphas, predictor selection and validation decisions across the paired runs.",
+      "scoring_criterion": "Exact equality of tuning signatures; test MAE changes, proving the perturbation reached final evaluation.",
+      "pass_fail_threshold": {
+        "checks_fraction": 1.0
+      }
+    },
+    {
+      "name": "model_attempt_budget",
+      "input": {
+        "fixture": "synthetic",
+        "seed": 1,
+        "rows": 300,
+        "target": "weak_rating_signal"
+      },
+      "expected_outcome": "Model limits are respected; the weak-signal stress fixture exercises the three-fit cap in the adaptive systems.",
+      "scoring_criterion": "Fixed uses one fit; simple/adaptive use three unique alphas; zero model/retry budget violations.",
+      "pass_fail_threshold": {
+        "checks_fraction": 1.0
+      }
+    }
+  ]
+}

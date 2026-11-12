@@ -1,0 +1,14 @@
+services:
+  healthcare-ml:
+    build:
+      context: .
+      dockerfile: ml_workflow/Dockerfile
+    ports:
+      - "127.0.0.1:8001:8001"
+    environment:
+      HEALTHCARE_DATABASE_URL: postgresql://healthcare:healthcare@healthcare-db/healthcare
+    volumes:
+      - ./output:/workspace/output
+    depends_on:
+      healthcare-db:
+        condition: service_healthy

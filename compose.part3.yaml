@@ -1,0 +1,20 @@
+# Read-only integration mounts. No completed source files or images are changed.
+services:
+  airflow-scheduler:
+    environment:
+      PYTHONPATH: /opt/airflow
+    volumes:
+      - ./ml_workflow:/opt/airflow/ml_workflow:ro
+      - ./adaptive_workflow:/opt/airflow/adaptive_workflow:ro
+  airflow-dag-processor:
+    environment:
+      PYTHONPATH: /opt/airflow
+    volumes:
+      - ./ml_workflow:/opt/airflow/ml_workflow:ro
+      - ./adaptive_workflow:/opt/airflow/adaptive_workflow:ro
+  airflow-api-server:
+    environment:
+      PYTHONPATH: /opt/airflow
+    volumes:
+      - ./ml_workflow:/opt/airflow/ml_workflow:ro
+      - ./adaptive_workflow:/opt/airflow/adaptive_workflow:ro
