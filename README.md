@@ -15,14 +15,13 @@ IDS706-Mini-Assignment-Apache-Airflow-Orchestration/
 ├── evaluation/               # Evaluation cases and three-system comparison
 ├── tests/                    # Unit, integration, and workflow validation tests
 ├── audit/                    # Runtime and assignment-requirement verification
-├── screenshots/              # Screenshots used as submission evidence
 ├── output/                   # Generated metrics, plots, predictions, and results
-├── images/                   # Images used in the README and documentation
+├── images/                   # Architecture diagram and submission screenshots
 ├── Dockerfile                # Base Docker image configuration
 ├── docker-compose.yaml       # Core Airflow and PostgreSQL services
 ├── compose.ml.yaml           # Part 2 ML workflow and UI services
-├── compose.part3.yaml        # Part 3 adaptive workflow services
-├── compose.evaluation.yaml   # Evaluation and comparison services
+├── compose.part3.yaml        # Part 3 integration mounts for Airflow
+├── compose.evaluation.yaml   # One-shot adaptive workflow and evaluation runners
 └── README.md                 # Project overview, architecture, and instructions
 ```
 
