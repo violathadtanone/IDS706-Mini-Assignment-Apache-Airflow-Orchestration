@@ -45,11 +45,15 @@ The project is organized into three stages:
 ### Part 1 — Airflow Pipeline
 - This step builds an end-to-end data pipeline using Apache Airflow. Two related healthcare datasets are ingested and cleaned independently, then merged using Facility ID.
 - The merged data is stored in PostgreSQL and read back for analysis. Independent tasks run in parallel where appropriate, and the pipeline is executed on a scheduled DAG.
+- Cleaning normalizes missing values, converts numeric scores/ratings and dates, and validates facility and infection-record keys before merging.
+- The DAG runs daily at **00:00 UTC**. Hospital and infection ingestion/cleaning branches run independently before the merge.
+- Analysis reads PostgreSQL back and saves a CSV and visualization of average central-line infection score by hospital rating. Differences between rating groups describe an association, not a causal effect.
 
 ### Part 2 — Agent-Based ML Workflow
 - This part uses the cleaned data from Part 1 in an agent-based machine learning workflow.
 - Different agents handle data preparation, model training, evaluation, and model adjustment. The workflow can loop through multiple model attempts and uses mean absolute error (MAE) to select the best validated predictor.
 - A live graph interface shows the actual agent execution and loop transitions.
+- Ridge regression estimates `HAI_1_SIR` using hospital rating, type, and state. The median predictor beat Ridge on validation; selected validation MAE was **0.426202**, and test MAE was **0.448833**.
 
 ### Part 3 — Adaptive Multi-Agent Workflow
 - This part extends the workflow by introducing multiple specialist agents with different responsibilities.
@@ -57,24 +61,22 @@ The project is organized into three stages:
 - This adaptive workflow is later compared against a fixed Airflow workflow and the simpler agent-based workflow from Part 2.
 <br><br>
 
-### Evaluation Suite
-
-The evaluation suite measures both model performance and agent coordination. Each test case defines an input or fault condition, expected behavior, scoring criteria, and a pass/fail threshold.
-
-The tests cover normal execution, model selection, invalid inputs, failure recovery, test-set isolation, and execution limits. All nine evaluation cases passed for the adaptive workflow.
-
 ### Baseline Comparison
 
-The adaptive system is compared against two healthcare versions of the workflows demonstrated in class:
+Part 3 was compared against healthcare adaptations of the **two baseline workflow patterns demonstrated in class**:
 
-- **Fixed Airflow baseline:** follows predefined execution steps with no adaptive model selection.
-- **Simple agentic baseline:** uses the Part 2 LangGraph workflow with a bounded model-adjustment loop.
-- **Adaptive Part 3 workflow:** dynamically selects specialist agents and can recover from eligible transient failures.
+| Workflow | Classroom baseline it represents | Key behavior |
+|---|---|---|
+| **Fixed Airflow Baseline** | Fixed Airflow workflow | Executes predefined steps with one fixed Ridge model and no adaptive model selection. |
+| **Part 2 Agent Workflow** | Simple agentic workflow | Uses agents and a bounded model-adjustment loop, but has limited routing and no database-recovery agent. |
+| **Part 3 Adaptive Workflow** | Proposed adaptive system | Dynamically selects specialist agents based on intermediate results and can route recoverable failures through a Recovery Coordinator. |
 
-| System | Validation MAE | Test MAE | Recovery |
+All three healthcare workflows use the same prediction task, cohort, train/validation/test splits, predictors, and MAE metric so their results can be compared fairly.
+
+| Healthcare Workflow | Validation MAE | Test MAE | Failure Recovery |
 |---|---:|---:|---|
-| Fixed Airflow baseline | 0.432464 | 0.442157 | Yes |
-| Part 2 agent workflow | 0.426202 | 0.448833 | No |
-| Part 3 adaptive workflow | 0.426202 | 0.448833 | Yes |
+| Fixed Airflow Baseline | 0.432464 | **0.442157** | Standard task retry |
+| Part 2 Agent Workflow | **0.426202** | 0.448833 | No |
+| Part 3 Adaptive Workflow | **0.426202** | 0.448833 | Adaptive recovery agent |
 
-The fixed Airflow baseline achieved the lowest test MAE, while the adaptive workflow provided stronger routing and recovery capabilities.
+The fixed Airflow workflow achieved the lowest test MAE, while the Part 3 workflow provided the strongest coordination and recovery behavior. The adaptive workflow passed all nine evaluation cases, including routing, recovery, invalid-input handling, test-set isolation, and execution-budget checks.
