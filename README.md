@@ -56,3 +56,25 @@ The project is organized into three stages:
 - A dispatcher selects the next agent based on intermediate results. The system can route tasks dynamically, retry temporary failures through a recovery agent, and stop appropriately when a permanent error occurs.
 - This adaptive workflow is later compared against a fixed Airflow workflow and the simpler agent-based workflow from Part 2.
 <br><br>
+
+### Evaluation Suite
+
+The evaluation suite measures both model performance and agent coordination. Each test case defines an input or fault condition, expected behavior, scoring criteria, and a pass/fail threshold.
+
+The tests cover normal execution, model selection, invalid inputs, failure recovery, test-set isolation, and execution limits. All nine evaluation cases passed for the adaptive workflow.
+
+### Baseline Comparison
+
+The adaptive system is compared against two healthcare versions of the workflows demonstrated in class:
+
+- **Fixed Airflow baseline:** follows predefined execution steps with no adaptive model selection.
+- **Simple agentic baseline:** uses the Part 2 LangGraph workflow with a bounded model-adjustment loop.
+- **Adaptive Part 3 workflow:** dynamically selects specialist agents and can recover from eligible transient failures.
+
+| System | Validation MAE | Test MAE | Recovery |
+|---|---:|---:|---|
+| Fixed Airflow baseline | 0.432464 | 0.442157 | Yes |
+| Part 2 agent workflow | 0.426202 | 0.448833 | No |
+| Part 3 adaptive workflow | 0.426202 | 0.448833 | Yes |
+
+The fixed Airflow baseline achieved the lowest test MAE, while the adaptive workflow provided stronger routing and recovery capabilities.
