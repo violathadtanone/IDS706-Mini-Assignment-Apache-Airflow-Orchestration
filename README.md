@@ -51,6 +51,40 @@ source .venv/bin/activate
 ```bash
 python -m pip install --upgrade pip
 ```
+### 4. Set up the containerized development environment
+- Make sure Docker Desktop is installed and running.
+
+- Build the required Docker services:
+
+```bash
+docker compose -f docker-compose.yaml -f compose.part3.yaml -f compose.ml.yaml -f compose.evaluation.yaml build
+```
+
+- Start the Airflow and PostgreSQL services:
+
+```bash
+docker compose -f docker-compose.yaml -f compose.part3.yaml up -d postgres healthcare-db airflow-init airflow-api-server airflow-scheduler airflow-dag-processor
+```
+
+- Start the Part 2 machine learning workflow and live agent interface:
+
+```bash
+docker compose -f docker-compose.yaml -f compose.part3.yaml -f compose.ml.yaml up -d healthcare-ml
+```
+
+- Confirm that the containers are running:
+
+```bash
+docker compose ps
+```
+
+Useful local interfaces:
+
+| Service | URL |
+|---|---|
+| Airflow UI | http://localhost:8080 |
+| Part 2 Agent UI | http://localhost:8001 |
+
 ### 5. Run the Airflow workflow
 **Goal:** Run the end-to-end healthcare data pipeline from ingestion through analysis.
 
@@ -85,6 +119,29 @@ docker compose exec airflow-api-server cat /opt/airflow/simple_auth_manager_pass
 - Log in, open **DAGs**, and locate the healthcare pipeline DAG.
 
 - Trigger the DAG manually if needed, then use the **Graph** view to monitor each task.
+
+### 6. Run the Part 2 agent-based machine learning workflow
+**Goal:** Run the agent-based machine learning workflow using the cleaned healthcare data from Part 1.
+
+- Make sure the Part 1 Airflow pipeline has completed and PostgreSQL is running.
+
+- Start the Part 2 service:
+
+```bash
+docker compose -f docker-compose.yaml -f compose.part3.yaml -f compose.ml.yaml up -d healthcare-ml
+```
+
+- Confirm that the service is running:
+
+```bash
+docker compose -f docker-compose.yaml -f compose.part3.yaml -f compose.ml.yaml ps healthcare-ml
+```
+
+- Open the live agent interface:
+
+http://localhost:8001
+
+- Select **Start workflow run** to execute the workflow and observe the live agent graph, model-adjustment loop, and final MAE results.
 <br><br>
 
 ## Dataset Description
