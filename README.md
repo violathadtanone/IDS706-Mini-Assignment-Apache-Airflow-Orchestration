@@ -75,7 +75,7 @@ docker compose -f docker-compose.yaml -f compose.part3.yaml -f compose.ml.yaml u
 - Confirm that the containers are running:
 
 ```bash
-docker compose ps
+docker compose -f docker-compose.yaml -f compose.part3.yaml -f compose.ml.yaml ps
 ```
 
 Useful local interfaces:
